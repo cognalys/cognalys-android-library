@@ -1,0 +1,128 @@
+package com.matesnetwork.callverification;
+
+import java.util.ArrayList;
+
+import android.content.Context;
+import android.telephony.TelephonyManager;
+import android.text.TextUtils;
+import android.util.Log;
+
+import com.matesnetwork.callverification.AuthenticateToken.AuthenticateListner;
+import com.matesnetwork.callverification.RequestmissedCallAsync.RequestMissedCallListnr;
+import com.matesnetwork.interfaces.VerificationListner;
+
+public class Cognalys {
+	//private Context context;
+
+	/***
+	 * 
+	 * @param context
+	 
+	 */
+	/*private Cognalys(Context context) {
+		this.context = context;
+	}*/
+private Cognalys(){}
+	
+/*	private String[] getnumb(Context context) {
+		Log.d("abx", "getnumb");
+		CogPref cogPref= new CogPref(context);
+		String[] arr=(String[]) ObjectSerializer.deserialize(cogPref.getString("numberarray"));
+		Log.d("abx", "arr="+arr[0]);
+		return arr;
+	}*/
+
+	/*private String getSHA() {
+		return Methods.getSHA(context);
+	}
+*/
+	
+
+	public static String getCountryCode(Context context) {
+		TelephonyManager tm = (TelephonyManager) context.getSystemService(Context.TELEPHONY_SERVICE);
+
+		String numWithCode = Iso2Phone.getPhone(tm.getNetworkCountryIso());
+		return numWithCode;
+
+	}
+   public static void enableAnalylitics(Context context,boolean enableActiveUserStatics,boolean enablUserLocation){
+	Log.d("abx", "in enableAnalylitics");
+	if(enableActiveUserStatics||enablUserLocation){
+		Log.d("abx", "in enableAnalylitics 1");
+		if (!TextUtils.isEmpty(Methods.getUserId(context))) {
+			Log.d("abx", "request missed call onRegFailed2");
+			new SendLocationInBG(context, Methods.getaccessTok(context), Methods.getappId(context), Methods.getUserId(context), enablUserLocation, enableActiveUserStatics).execute("");
+		}
+		
+	}
+}
+
+   public static void verifyMobileNumber(final Context context,final String tokenId,final String app_id,final String phoneNumber, final VerificationListner verificationListner){
+	   if (TextUtils.isEmpty(tokenId)) {
+		   verificationListner.onVerificationFailed();
+			Log.e("Cognalys", "Authentication error Invalid or null TokenId");
+		} else {
+			new AuthenticateToken(context,tokenId, Methods.getSHA(context), app_id,
+					new AuthenticateListner() {
+
+						@Override
+						public String[] onVerifySucess(String[] numberArray) {
+							//
+							new RequestmissedCallAsync(context,tokenId, Methods.getSHA(context), app_id,phoneNumber,numberArray, new RequestMissedCallListnr() {
+
+								@Override
+								public String onRequestStart() {
+									Log.d("abx", "request missed call sent started");
+									return null;
+								}
+
+
+								@Override
+								public String onRequestFailed(ArrayList<String>  errorCodeList) {
+									  verificationListner.onVerificationFailed();
+									Log.d("abx", "request missed call sent failed");
+									return null;
+								}
+
+								@Override
+								public String[] onRequestSucess(String[] numb) {
+									Log.d("abx", "request missed call sent sucessfully");
+								
+									return null;
+								}
+
+
+								@Override
+								public void onNumberVerified() {
+									Log.d("abx", "request missed call onRegSucess");
+									verificationListner.onVerificationSucess();
+									ConfirmRegistration confirmRegistration= new ConfirmRegistration(context, tokenId, Methods.getSHA(context), app_id,phoneNumber);
+									confirmRegistration.execute("");
+									
+								}
+
+
+								@Override
+								public void onNumberNotVerified() {
+									  verificationListner.onVerificationFailed();
+									Log.d("abx", "request missed call onRegFailed");
+								}
+
+
+							}).execute("");
+							return null;
+						}
+
+						@Override
+						public String onVerifyFailed(ArrayList<String> errorList) {
+							  verificationListner.onVerificationFailed();
+							return null;
+						}
+					}).execute("");
+		
+
+		}
+   }
+   
+
+}

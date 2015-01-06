@@ -1,0 +1,8 @@
+package com.matesnetwork.interfaces;
+
+public interface VerificationListner {
+	
+	public void onVerificationStarted();
+	public void onVerificationSucess();
+	public void onVerificationFailed();
+}
